@@ -7342,7 +7342,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.6.7":
+"axios@npm:^1.6.7, axios@npm:^1.8.4":
   version: 1.8.4
   resolution: "axios@npm:1.8.4"
   dependencies:
@@ -13448,6 +13448,7 @@ __metadata:
     "@tanstack/react-query": ^5.71.10
     "@types/node": ^22.14.0
     "@types/react": ^19
+    axios: ^1.8.4
     dotenv: ^16.4.7
     ethers: ^6.13.5
     react: ^19.1.0
