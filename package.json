@@ -49,8 +49,10 @@
     "verify": "yarn hardhat:verify"
   },
   "devDependencies": {
+    "@types/node": "^22.14.0",
     "husky": "~9.1.6",
-    "lint-staged": "~13.2.2"
+    "lint-staged": "~13.2.2",
+    "typescript": "^5.8.2"
   },
   "packageManager": "yarn@3.2.3",
   "engines": {
