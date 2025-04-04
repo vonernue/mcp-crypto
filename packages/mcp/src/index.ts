@@ -1,10 +1,19 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { useEnsAddress } from 'wagmi'
-import { normalize } from 'viem/ens'
+import * as dotenv from "dotenv";
+import { ENV } from './env.js';
+import { ethers } from 'ethers';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
 const USER_AGENT = "mcp-crypto/1.0";
+
+dotenv.config();
+
+async function getEnsAddress(ensDomain: string) {
+  const provider = new ethers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/" + ENV.ALCHEMY_APIKEY);
+  const address = await provider.resolveName(ensDomain);
+  return address;
+}
 
 // Create server instance
 const server = new McpServer({
@@ -23,25 +32,25 @@ server.tool(
     ensDomain: z.string().describe("ENS domain to resolve"),
   },
   async ({ ensDomain }) => {
-    const { data: ensAddr } = useEnsAddress({
-      name: normalize(ensDomain)
-    });
+    const address = await getEnsAddress(ensDomain);
 
     return {
       content: [
         {
           type: "text",
-          text: ensAddr || "Address not found",
+          text: address || "Address not found",
         },
       ],
     };
   }
 )
 
+
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Weather MCP Server running on stdio");
+  console.error("Crypto MCP Server running on stdio");
 }
 
 main().catch((error) => {
