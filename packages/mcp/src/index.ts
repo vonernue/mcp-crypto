@@ -1,12 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import * as dotenv from "dotenv";
+import { SDK } from "@1inch/cross-chain-sdk";
+import { FusionSDK, NetworkEnum } from "@1inch/fusion-sdk";
 import { ENV } from './env.js';
 import { ethers } from 'ethers';
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import axios from "axios";
-
-dotenv.config();
 
 async function getEnsAddress(ensDomain: string) {
   const provider = new ethers.JsonRpcProvider("https://eth-mainnet.g.alchemy.com/v2/" + ENV.ALCHEMY_APIKEY);
@@ -73,6 +72,55 @@ async function getTokenInfo(tokenName: string) {
   }
 }
 
+async function getSwapQuote(
+  fromTokenAddress: string, 
+  toTokenAddress: string, 
+  chainid: number,
+  amount: number,
+  decimal: number
+) {
+  const sdk = new FusionSDK({
+    url: "https://api.1inch.dev/fusion",
+    network: chainid,
+    authKey: ENV.ONEINCH_APIKEY
+  });
+
+  const params = {
+    fromTokenAddress,
+    toTokenAddress,
+    amount: (amount * 10 ** decimal).toString(),
+  }
+
+  const quote = await sdk.getQuote(params);
+  return quote;
+}
+
+
+async function getCrosschainSwapQuote(
+  fromChainId: number, 
+  toChainId: number, 
+  fromTokenAddress: string, 
+  toTokenAddress: string, 
+  amount: number,
+  decimal: number
+) {
+  const sdk = new SDK({
+    url: "https://api.1inch.dev/fusion-plus",
+    authKey: ENV.ONEINCH_APIKEY
+  });
+
+  const params = {
+    srcChainId: fromChainId,
+    dstChainId: toChainId,
+    srcTokenAddress: fromTokenAddress,
+    dstTokenAddress: toTokenAddress,
+    amount: (amount * 10 ** decimal).toString(),
+  }
+
+  const quote = await sdk.getQuote(params);
+  return quote;
+}
+
 // Create server instance
 const server = new McpServer({
   name: "MCP-Crypto",
@@ -125,24 +173,6 @@ server.tool(
 )
 
 server.tool(
-  "getWhitelistedTokenList",
-  "Get whitelisted token list",
-  {},
-  async () => {
-    const tokenList = await getWhitelistedTokenList();
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(tokenList) || "Cannot fetch token list",
-        },
-      ],
-    };
-  }
-)
-
-server.tool(
   "getTokenInfo",
   "Get Token Info",
   {
@@ -162,10 +192,75 @@ server.tool(
   }
 )
 
+server.tool(
+  "getSwapQuote",
+  "Get Swap Quote",
+  {
+    fromTokenAddress: z.string().describe("From token address"),
+    toTokenAddress: z.string().describe("To token address"),
+    chainid: z.number().describe("Chain ID"),
+    amount: z.number().describe("Amount to swap"),
+    decimal: z.number().describe("The decimal of the source token"),
+  },
+  async ({ fromTokenAddress, toTokenAddress, chainid, amount, decimal }) => {
+    const quote = await getSwapQuote(fromTokenAddress, toTokenAddress, chainid, amount, decimal);
+    
+    const json = JSON.stringify(quote, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    );
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: json || "Cannot fetch swap quote",
+        },
+      ],
+    };
+  }
+)
+
+server.tool(
+  "getCrosschainSwapQuote",
+  "Get Crosschain Swap Quote",
+  {
+    fromChainId: z.number().describe("From chain ID"),
+    toChainId: z.number().describe("To chain ID"),
+    fromTokenAddress: z.string().describe("From token address"),
+    toTokenAddress: z.string().describe("To token address"),
+    amount: z.number().describe("Amount to swap"),
+    decimal: z.number().describe("The decimal of the source token"),
+  },
+  async ({ fromChainId, toChainId, fromTokenAddress, toTokenAddress, amount, decimal }) => {
+    const quote = await getCrosschainSwapQuote(fromChainId, toChainId, fromTokenAddress, toTokenAddress, amount, decimal);
+
+    const json = JSON.stringify(quote, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    );
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: json || "Cannot fetch swap quote",
+        },
+      ],
+    };
+  }
+)
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log("Crypto MCP Server running on stdio");
+  // console.log("Crypto MCP Server running on stdio");
+  // console.log(await getSwapQuote(
+  //   "0xdac17f958d2ee523a2206206994597c13d831ec7", 
+  //   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 
+  //   1, 
+  //   100, 
+  //   6
+  // ))
+  // console.log(await getCrosschainSwapQuote(1, 10, "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", 100))
 }
 
 main().catch((error) => {
