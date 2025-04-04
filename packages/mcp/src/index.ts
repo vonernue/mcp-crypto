@@ -24,9 +24,44 @@ async function getPortfolioData(addresses: string[], chainid: number) {
     params: {
       "addresses": addresses,
       "chain_id": chainid.toString(),
+    }
+  };
+
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+}
+
+async function getWhitelistedTokenList() {
+  const url = "https://api.1inch.dev/token/v1.2/multi-chain/token-list";
+
+  const config = {
+    headers: {
+      "Authorization": "Bearer " + ENV.ONEINCH_APIKEY
+    }
+  };
+
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+}
+
+async function getTokenInfo(tokenName: string) {
+  const url = "https://api.1inch.dev/token/v1.2/search";
+
+  const config = {
+    headers: {
+      "Authorization": "Bearer " + ENV.ONEINCH_APIKEY
     },
-    paramsSerializer: {
-      indexes: null
+    params: {
+      "query": tokenName,
+      "only_positive_rating": "true",
     }
   };
 
@@ -89,11 +124,48 @@ server.tool(
   }
 )
 
+server.tool(
+  "getWhitelistedTokenList",
+  "Get whitelisted token list",
+  {},
+  async () => {
+    const tokenList = await getWhitelistedTokenList();
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(tokenList) || "Cannot fetch token list",
+        },
+      ],
+    };
+  }
+)
+
+server.tool(
+  "getTokenInfo",
+  "Get Token Info",
+  {
+    tokenName: z.string().describe("Token name to search for"),
+  },
+  async ({ tokenName }) => {
+    const tokenInfo = await getTokenInfo(tokenName);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(tokenInfo) || "Cannot fetch token info",
+        },
+      ],
+    };
+  }
+)
+
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.log("Crypto MCP Server running on stdio");
-  // console.log(await getPortfolioData(["0xda84f65c486cfd4f923331f3763a0d51e4a615aa"], 1));
 }
 
 main().catch((error) => {
