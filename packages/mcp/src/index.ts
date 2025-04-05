@@ -72,6 +72,93 @@ async function getTokenInfo(tokenName: string) {
   }
 }
 
+async function getTokenAllowance(
+  tokenAddress: string, 
+  walletAddress: string, 
+  chainid: number
+) {
+  const url = `https://api.1inch.dev/swap/v6.0/${chainid}/approve/allowance`;
+  const config = {
+    headers: {
+      "Authorization": "Bearer " + ENV.ONEINCH_APIKEY
+    },
+    params: {
+      "tokenAddress": tokenAddress,
+      "walletAddress": walletAddress
+    }
+  };
+
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+}
+
+async function genApproveTokenTxData(
+  chainid: number,
+  tokenAddress: string,
+  amount: number | null,
+  decimal: number,
+) {
+  const url = `https://api.1inch.dev/swap/v6.0/${chainid}/approve/transaction-data`;
+  const config: {
+    headers: { Authorization: string },
+    params: { tokenAddress: string, amount?: string }
+  } = {
+    headers: {
+      "Authorization": "Bearer " + ENV.ONEINCH_APIKEY
+    },
+    params: {
+      "tokenAddress": tokenAddress,
+    }
+  };
+
+  if (amount) {
+    config.params["amount"] = (amount * 10 ** decimal).toString();
+  }
+
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+}
+
+async function genSwapTxData(
+  chainid: number,
+  walletAddress: string,
+  fromTokenAddress: string,
+  toTokenAddress: string,
+  amount: number,
+  decimal: number,
+) {
+  const url = `https://api.1inch.dev/swap/v6.0/${chainid}/swap`;
+  const config = {
+    headers: {
+      "Authorization": "Bearer " + ENV.ONEINCH_APIKEY
+    },
+    params: {
+      "src": fromTokenAddress,
+      "dst": toTokenAddress,
+      "amount": (amount * 10 ** decimal).toString(),
+      "from": walletAddress,
+      "origin": walletAddress,
+      "slippage": 1,
+    }
+  };
+
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+}
+
+
 async function getSwapQuote(
   fromTokenAddress: string, 
   toTokenAddress: string, 
