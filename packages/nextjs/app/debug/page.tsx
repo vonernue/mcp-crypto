@@ -1,4 +1,5 @@
 import { DebugContracts } from "./_components/DebugContracts";
+import { MetaMaskAutomation } from "./_components/MetaMaskAutomation";
 import type { NextPage } from "next";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
@@ -10,7 +11,6 @@ export const metadata = getMetadata({
 const Debug: NextPage = () => {
   return (
     <>
-      <DebugContracts />
       <div className="text-center mt-8 bg-secondary p-10">
         <h1 className="text-4xl my-0">Debug Contracts</h1>
         <p className="text-neutral">
@@ -21,6 +21,16 @@ const Debug: NextPage = () => {
           </code>{" "}
         </p>
       </div>
+
+      {/* MetaMask Automation Section */}
+      <div className="text-center mt-8 bg-accent p-6">
+        <h2 className="text-3xl my-0">MetaMask Automation Demo</h2>
+        <p className="text-neutral">Test backend-driven MetaMask interactions with Socket.IO</p>
+      </div>
+      <MetaMaskAutomation />
+
+      {/* Contract Debugging Section */}
+      <DebugContracts />
     </>
   );
 };
